@@ -1,0 +1,321 @@
+[
+  {
+    "doc_id": "en-000",
+    "text": "New Delhi is the capital of India and seat of all three branches of the Government of India.",
+    "query": "What is the capital of India?",
+    "answer": "New Delhi",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "en-001",
+    "text": "Paris is the capital and most populous city of France, situated on the river Seine in the north of the country.",
+    "query": "What is the capital of France?",
+    "answer": "Paris",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "en-002",
+    "text": "Photosynthesis is the process by which green plants, algae and some bacteria convert light energy, usually from the sun, into chemical energy stored in glucose. Chlorophyll in the chloroplasts absorbs light, primarily in the red and blue wavelengths, and this energy drives the conversion of carbon dioxide and water into glucose and oxygen.",
+    "query": "How does photosynthesis work?",
+    "answer": "Plants convert light energy into chemical energy stored in glucose, releasing oxygen as a byproduct.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  },
+  {
+    "doc_id": "en-003",
+    "text": "Seasons are caused by the tilt of the Earth's rotational axis, about 23.5 degrees, relative to its orbital plane around the Sun. As the Earth orbits, different hemispheres receive more or less direct sunlight over the course of the year, producing summer, winter, spring and autumn.",
+    "query": "What causes seasons on Earth?",
+    "answer": "The 23.5 degree tilt of Earth's axis relative to its orbit causes seasons.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  },
+  {
+    "doc_id": "en-004",
+    "text": "The boiling point of pure water at standard atmospheric pressure (1 atm, sea level) is 100 degrees Celsius, which is equivalent to 212 degrees Fahrenheit or 373.15 Kelvin.",
+    "query": "What is the boiling point of water at sea level?",
+    "answer": "100 degrees Celsius (212°F) at sea level.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  },
+  {
+    "doc_id": "en-005",
+    "text": "Retrieval-Augmented Generation (RAG) is a technique that combines a retrieval system with a generative language model. Instead of relying solely on knowledge memorized during training, the model retrieves relevant passages from an external corpus at inference time and conditions its generated answer on that retrieved context, which improves factual grounding and reduces hallucination.",
+    "query": "What is retrieval-augmented generation?",
+    "answer": "RAG combines document retrieval with a generative model so answers are grounded in retrieved context.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-006",
+    "text": "A vector database is a type of database that stores data as high-dimensional numerical vectors, called embeddings, and is optimized for similarity search - finding the vectors that are closest to a query vector by a distance metric such as cosine similarity or Euclidean distance. Vector databases are commonly used to power semantic search and retrieval-augmented generation systems.",
+    "query": "What is a vector database?",
+    "answer": "A database optimized to store embeddings and perform similarity search over them.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-007",
+    "text": "BM25 (Best Matching 25) is a ranking function used by search engines to estimate the relevance of documents to a given search query. It is a bag-of-words retrieval function based on term frequency and inverse document frequency, with tunable parameters that control term-frequency saturation and document-length normalization.",
+    "query": "What is BM25?",
+    "answer": "A probabilistic ranking function based on term frequency and inverse document frequency.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-008",
+    "text": "Semantic chunking splits a document into segments based on shifts in meaning rather than a fixed character or token count. Sentence embeddings are computed for consecutive sentences and a new chunk boundary is introduced wherever the semantic similarity between adjacent sentences drops below a threshold, which keeps topically coherent text together.",
+    "query": "What is semantic chunking?",
+    "answer": "Splitting text at points where meaning shifts, using sentence-embedding similarity rather than a fixed size.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-009",
+    "text": "Automatic speech-to-text transcription (ASR) converts spoken audio into text: acoustic features (mel-spectrograms) are extracted from the waveform, fed through a neural acoustic model to predict phonemes or subword tokens, and a language model refines these into the final transcript.",
+    "query": "What is chunk overlap in text splitting?",
+    "answer": "Repeating a portion of adjacent chunks so ideas spanning a boundary are not lost.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-010",
+    "text": "Automatic speech recognition (ASR) systems convert spoken audio into text by first extracting acoustic features (such as mel-spectrograms) from the audio waveform, then feeding those features through a neural acoustic model to predict phonemes or subword tokens, and finally applying a language model to produce the most probable transcript.",
+    "query": "How does speech-to-text transcription work?",
+    "answer": "Audio is converted to acoustic features, decoded by an acoustic model, then refined by a language model into text.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-011",
+    "text": "The Ganges (Ganga) is a trans-boundary river of Asia which flows through India and Bangladesh. It is considered sacred in Hinduism and supports one of the most densely populated river basins in the world, providing water for drinking, irrigation and hydroelectric power.",
+    "query": "What is the Ganges river known for?",
+    "answer": "It is a sacred river in Hinduism supporting a densely populated basin across India and Bangladesh.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "en-012",
+    "text": "Mount Everest, located in the Mahalangur Himal sub-range of the Himalayas, is Earth's highest mountain above sea level, standing at 8,849 metres. The international border between Nepal and the Tibet Autonomous Region of China runs across its summit point.",
+    "query": "What is the tallest mountain in the world?",
+    "answer": "Mount Everest, at 8,849 metres above sea level.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "en-013",
+    "text": "The Japanese yen is the official currency of Japan. It is the third most traded currency in the foreign exchange market after the US dollar and the euro, and is also widely used as a reserve currency.",
+    "query": "What is the currency of Japan?",
+    "answer": "The Japanese yen.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "en-014",
+    "text": "Machine translation is the use of software to translate text or speech from one natural language to another without human involvement. Modern systems predominantly use neural machine translation, in which an encoder-decoder neural network, often based on the Transformer architecture, learns to map sequences in a source language to sequences in a target language.",
+    "query": "What is machine translation?",
+    "answer": "Automated translation of text between languages, typically using neural encoder-decoder models today.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-015",
+    "text": "In the context of large language models, a hallucination is a response that is fluent and confident-sounding but factually incorrect, unsupported by the provided context, or entirely fabricated. Hallucinations are a key motivation for retrieval-augmented generation, which grounds outputs in retrieved evidence, and for guardrails that detect and suppress ungrounded claims.",
+    "query": "What are hallucinations in language models?",
+    "answer": "Fluent but factually incorrect or fabricated model outputs, unsupported by the given context.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-016",
+    "text": "Cosine similarity is a metric used to measure how similar two vectors are irrespective of their magnitude, computed as the cosine of the angle between them. It is calculated as the dot product of the two vectors divided by the product of their magnitudes, and ranges from -1 (opposite) to 1 (identical direction).",
+    "query": "What is cosine similarity?",
+    "answer": "A metric measuring the cosine of the angle between two vectors, ranging from -1 to 1.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-017",
+    "text": "The Indus Valley Civilization, also called the Harappan Civilization, was a Bronze Age civilization in the northwestern regions of South Asia. It is noted for its early urban planning, standardized weights and measures, and advanced drainage systems in cities such as Mohenjo-daro and Harappa.",
+    "query": "What is the significance of the Indus Valley Civilization?",
+    "answer": "An early Bronze Age civilization noted for advanced urban planning and drainage systems.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "history"
+    }
+  },
+  {
+    "doc_id": "en-018",
+    "text": "The Indian national anthem, 'Jana Gana Mana', was written and composed by the Nobel laureate poet Rabindranath Tagore. It was first sung in 1911 and officially adopted as the national anthem of India in 1950.",
+    "query": "Who wrote the Indian national anthem?",
+    "answer": "Rabindranath Tagore.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "history"
+    }
+  },
+  {
+    "doc_id": "en-019",
+    "text": "The liver is a vital organ that performs several functions, including detoxification of harmful substances, protein synthesis, production of biochemicals needed for digestion such as bile, and regulation of glycogen storage and blood sugar levels.",
+    "query": "What is the function of the human liver?",
+    "answer": "It detoxifies substances, synthesizes proteins, produces bile, and regulates blood sugar via glycogen storage.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "health"
+    }
+  },
+  {
+    "doc_id": "en-020",
+    "text": "Common symptoms of dehydration include increased thirst, dry mouth, dark-colored urine, fatigue, dizziness, and confusion in more severe cases. Mild to moderate dehydration is usually treated by drinking more fluids, while severe dehydration may require intravenous fluids.",
+    "query": "What are the symptoms of dehydration?",
+    "answer": "Thirst, dry mouth, dark urine, fatigue, dizziness, and in severe cases confusion.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "health"
+    }
+  },
+  {
+    "doc_id": "en-021",
+    "text": "Inflation is the rate at which the general level of prices for goods and services rises over time, eroding purchasing power. Central banks typically try to keep inflation at a low, stable rate, often around 2 percent annually, using tools such as interest rate adjustments.",
+    "query": "What is inflation in economics?",
+    "answer": "A sustained rise in the general price level, eroding purchasing power over time.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "economics"
+    }
+  },
+  {
+    "doc_id": "en-022",
+    "text": "Gross Domestic Product (GDP) is the total monetary value of all finished goods and services produced within a country's borders in a specific time period. It is one of the primary indicators used to gauge the health and size of a country's economy.",
+    "query": "What is GDP?",
+    "answer": "The total monetary value of all goods and services produced within a country in a given period.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "economics"
+    }
+  },
+  {
+    "doc_id": "en-023",
+    "text": "Weather refers to short-term atmospheric conditions in a specific place at a specific time, such as temperature or rainfall on a given day. Climate refers to the long-term average of weather patterns in a region, typically measured over a period of at least 30 years.",
+    "query": "What is the difference between weather and climate?",
+    "answer": "Weather is short-term atmospheric conditions; climate is the long-term average of those conditions over decades.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  },
+  {
+    "doc_id": "en-024",
+    "text": "Renewable energy is energy derived from natural sources that are replenished at a rate faster than they are consumed, such as sunlight, wind, rain, tides, waves, and geothermal heat. Common examples include solar photovoltaic power, wind turbines, and hydroelectric dams.",
+    "query": "What is renewable energy?",
+    "answer": "Energy from naturally replenishing sources such as sunlight, wind, and water.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  },
+  {
+    "doc_id": "en-025",
+    "text": "A firewall is a network security device or software that monitors incoming and outgoing network traffic and decides whether to allow or block specific traffic based on a defined set of security rules, acting as a barrier between a trusted internal network and untrusted external networks such as the internet.",
+    "query": "What is the function of a firewall in networking?",
+    "answer": "It monitors and filters network traffic based on security rules to block untrusted access.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "en-026",
+    "text": "Latency is the time delay between a user's action, such as sending a request, and the system's corresponding response. In real-time or low-latency systems, engineers often measure latency using percentiles such as P50 (median), P90 or P99 to understand typical and worst-case performance rather than relying on a single average figure.",
+    "query": "What is latency in a software system?",
+    "answer": "The delay between a request and the corresponding response, often measured using percentiles like P50/P90/P99.",
+    "language": "en",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "tech"
+    }
+  },
+  {
+    "doc_id": "hi-000",
+    "text": "नई दिल्ली भारत की राजधानी है और भारत सरकार की तीनों शाखाओं की सीट है।",
+    "query": "भारत की राजधानी क्या है?",
+    "answer": "नई दिल्ली",
+    "language": "hi",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "geo"
+    }
+  },
+  {
+    "doc_id": "hi-001",
+    "text": "प्रकाश संश्लेषण वह प्रक्रिया है जिसके द्वारा हरे पौधे सूर्य के प्रकाश को ग्लूकोज में संग्रहीत रासायनिक ऊर्जा में बदलते हैं।",
+    "query": "प्रकाश संश्लेषण कैसे काम करता है?",
+    "answer": "पौधे प्रकाश ऊर्जा को ग्लूकोज में संग्रहीत रासायनिक ऊर्जा में बदलते हैं।",
+    "language": "hi",
+    "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)",
+    "metadata": {
+      "category": "science"
+    }
+  }
+]

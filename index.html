@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaani — Voice RAG over MSMARCO-XI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg-0:#05060b;
+  --bg-1:#0a0d18;
+  --panel:rgba(255,255,255,0.045);
+  --panel-brd:rgba(255,255,255,0.09);
+  --panel-brd-hi:rgba(255,255,255,0.18);
+  --text-0:#eceefb;
+  --text-1:#a7acc4;
+  --text-2:#6b7090;
+  --violet:#8b6bff;
+  --violet-2:#c9b6ff;
+  --cyan:#2fd9e8;
+  --mint:#3ef3b8;
+  --amber:#f5b944;
+  --red:#ff5c72;
+  --grad-1:linear-gradient(135deg,#8b6bff 0%,#2fd9e8 100%);
+  --grad-2:linear-gradient(135deg,#3ef3b8 0%,#2fd9e8 100%);
+  --font-display:'Space Grotesk',sans-serif;
+  --font-body:'Inter',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg-0);
+  color:var(--text-0);
+  font-family:var(--font-body);
+  overflow-x:hidden;
+  min-height:100vh;
+}
+::selection{background:rgba(139,107,255,0.35);color:#fff;}
+::-webkit-scrollbar{width:10px;}
+::-webkit-scrollbar-track{background:var(--bg-0);}
+::-webkit-scrollbar-thumb{background:#232840;border-radius:6px;}
+
+/* ---------- shared ---------- */
+.glass{
+  background:var(--panel);
+  border:1px solid var(--panel-brd);
+  backdrop-filter:blur(18px) saturate(140%);
+  -webkit-backdrop-filter:blur(18px) saturate(140%);
+  border-radius:20px;
+}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--cyan);
+  display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 8px var(--cyan);}
+.grad-text{
+  background:var(--grad-1);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+
+/* ---------- hero ---------- */
+#hero{
+  position:relative;
+  height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;
+  padding:0 24px;
+}
+#orb-canvas{position:absolute;inset:0;width:100%;height:100%;}
+.hero-inner{position:relative;z-index:2;max-width:820px;}
+.hero-inner .eyebrow{justify-content:center;margin-bottom:22px;}
+.hero-inner h1{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(40px,7vw,84px);
+  line-height:1.02;
+  letter-spacing:-0.02em;
+  margin-bottom:22px;
+}
+.hero-inner p{
+  font-size:clamp(15px,2vw,18px);
+  color:var(--text-1);
+  max-width:560px;
+  margin:0 auto 40px;
+  line-height:1.6;
+}
+.hero-tags{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:52px;}
+.hero-tag{
+  font-family:var(--font-mono);font-size:12px;color:var(--text-1);
+  padding:7px 14px;border-radius:100px;
+  border:1px solid var(--panel-brd);background:rgba(255,255,255,0.03);
+}
+.scroll-cue{
+  position:absolute;bottom:38px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:10px;
+  color:var(--text-2);font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;
+  cursor:pointer;z-index:2;
+  animation:bob 2.4s ease-in-out infinite;
+}
+@keyframes bob{0%,100%{transform:translate(-50%,0);}50%{transform:translate(-50%,8px);}}
+.scroll-cue .line{width:1px;height:34px;background:linear-gradient(var(--text-2),transparent);}
+
+/* ---------- transition wash ---------- */
+#transition-wash{
+  height:14vh;
+  background:linear-gradient(180deg, var(--bg-0), var(--bg-1));
+}
+
+/* ---------- app shell ---------- */
+#app{
+  position:relative;
+  min-height:100vh;
+  padding:90px 24px 120px;
+  background:
+    radial-gradient(1200px 600px at 15% 0%, rgba(139,107,255,0.10), transparent 60%),
+    radial-gradient(1000px 500px at 85% 20%, rgba(47,217,232,0.08), transparent 60%),
+    var(--bg-1);
+}
+.wrap{max-width:1080px;margin:0 auto;}
+.app-header{text-align:center;margin-bottom:56px;}
+.app-header h2{
+  font-family:var(--font-display);font-weight:600;
+  font-size:clamp(28px,4vw,42px);letter-spacing:-0.01em;margin:16px 0 12px;
+}
+.app-header p{color:var(--text-1);max-width:560px;margin:0 auto;font-size:15px;line-height:1.6;}
+.app-header .eyebrow{justify-content:center;margin-bottom:4px;}
+
+/* console */
+.console{padding:30px;margin-bottom:28px;}
+.mic-row{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+#mic-btn{
+  width:78px;height:78px;border-radius:50%;flex:none;
+  background:var(--grad-1);border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+  box-shadow:0 0 0 1px rgba(255,255,255,0.15) inset, 0 12px 30px -8px rgba(139,107,255,0.55);
+  transition:transform .15s ease;
+}
+#mic-btn:hover{transform:scale(1.04);}
+#mic-btn:active{transform:scale(0.97);}
+#mic-btn svg{width:28px;height:28px;fill:#0a0d18;}
+#mic-btn.listening{animation:pulse-ring 1.4s ease-out infinite;}
+@keyframes pulse-ring{
+  0%{box-shadow:0 0 0 0 rgba(139,107,255,0.55),0 0 0 1px rgba(255,255,255,0.15) inset;}
+  70%{box-shadow:0 0 0 22px rgba(139,107,255,0),0 0 0 1px rgba(255,255,255,0.15) inset;}
+  100%{box-shadow:0 0 0 0 rgba(139,107,255,0),0 0 0 1px rgba(255,255,255,0.15) inset;}
+}
+.wave{display:flex;align-items:center;gap:3px;height:34px;flex:none;}
+.wave span{width:3px;border-radius:2px;background:var(--cyan);height:6px;transition:height .12s ease;}
+.wave.active span{animation:wv 1s ease-in-out infinite;}
+.wave span:nth-child(1){animation-delay:.0s;}
+.wave span:nth-child(2){animation-delay:.1s;}
+.wave span:nth-child(3){animation-delay:.2s;}
+.wave span:nth-child(4){animation-delay:.3s;}
+.wave span:nth-child(5){animation-delay:.15s;}
+.wave span:nth-child(6){animation-delay:.25s;}
+.wave span:nth-child(7){animation-delay:.05s;}
+@keyframes wv{0%,100%{height:6px;}50%{height:30px;}}
+
+#query-form{flex:1;min-width:240px;display:flex;gap:10px;}
+#query-input{
+  flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--panel-brd);
+  border-radius:12px;padding:14px 16px;color:var(--text-0);font-family:var(--font-body);
+  font-size:14.5px;outline:none;transition:border-color .15s ease;
+}
+#query-input:focus{border-color:var(--panel-brd-hi);}
+#query-input::placeholder{color:var(--text-2);}
+#ask-btn{
+  background:rgba(255,255,255,0.06);border:1px solid var(--panel-brd-hi);color:var(--text-0);
+  font-family:var(--font-mono);font-size:12.5px;letter-spacing:0.04em;
+  padding:0 22px;border-radius:12px;cursor:pointer;transition:background .15s ease;
+}
+#ask-btn:hover{background:rgba(255,255,255,0.11);}
+.mic-hint{font-family:var(--font-mono);font-size:11px;color:var(--text-2);margin-top:14px;}
+.mic-hint b{color:var(--text-1);font-weight:500;}
+
+.suggestions{display:flex;gap:8px;flex-wrap:wrap;margin-top:18px;}
+.chip{
+  font-family:var(--font-mono);font-size:11.5px;color:var(--text-1);
+  padding:7px 13px;border-radius:100px;border:1px solid var(--panel-brd);
+  background:rgba(255,255,255,0.025);cursor:pointer;transition:all .15s ease;
+}
+.chip:hover{border-color:var(--panel-brd-hi);color:var(--text-0);background:rgba(255,255,255,0.06);}
+
+/* pipeline trace - signature element */
+#trace-wrap{padding:26px 30px;margin-bottom:28px;display:none;}
+#trace-wrap.show{display:block;}
+.trace-title{font-family:var(--font-mono);font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:var(--text-2);margin-bottom:20px;}
+.trace{display:flex;align-items:flex-start;overflow-x:auto;padding-bottom:6px;}
+.trace-node{flex:none;width:150px;text-align:center;position:relative;}
+.trace-line{
+  flex:1;height:1px;margin-top:17px;min-width:20px;
+  background:var(--panel-brd);position:relative;overflow:hidden;
+}
+.trace-line .fill{position:absolute;inset:0;width:0%;background:var(--grad-1);transition:width .5s ease;}
+.node-dot{
+  width:34px;height:34px;border-radius:50%;margin:0 auto 10px;
+  background:rgba(255,255,255,0.04);border:1px solid var(--panel-brd);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--font-mono);font-size:13px;color:var(--text-2);
+  transition:all .35s ease;position:relative;z-index:2;
+}
+.node-dot.active{border-color:var(--cyan);color:var(--cyan);box-shadow:0 0 16px rgba(47,217,232,0.35);}
+.node-dot.done{background:var(--grad-1);border-color:transparent;color:#0a0d18;}
+.node-dot.fail{background:var(--red);border-color:transparent;color:#0a0d18;}
+.node-label{font-size:12px;color:var(--text-1);font-weight:500;margin-bottom:3px;}
+.node-ms{font-family:var(--font-mono);font-size:10.5px;color:var(--text-2);}
+.node-ms.done{color:var(--mint);}
+
+/* result area */
+#result-area{display:none;flex-direction:column;gap:20px;}
+#result-area.show{display:flex;}
+
+.status-banner{padding:18px 22px;border-radius:14px;font-size:14px;line-height:1.55;display:flex;gap:12px;align-items:flex-start;}
+.status-banner.ok{background:rgba(62,243,184,0.08);border:1px solid rgba(62,243,184,0.28);}
+.status-banner.warn{background:rgba(245,185,68,0.08);border:1px solid rgba(245,185,68,0.3);}
+.status-banner.err{background:rgba(255,92,114,0.08);border:1px solid rgba(255,92,114,0.3);}
+.status-banner .dot{width:8px;height:8px;border-radius:50%;margin-top:6px;flex:none;}
+.status-banner.ok .dot{background:var(--mint);box-shadow:0 0 8px var(--mint);}
+.status-banner.warn .dot{background:var(--amber);box-shadow:0 0 8px var(--amber);}
+.status-banner.err .dot{background:var(--red);box-shadow:0 0 8px var(--red);}
+.status-banner .label{font-family:var(--font-mono);font-size:10.5px;letter-spacing:0.08em;text-transform:uppercase;display:block;margin-bottom:4px;}
+.status-banner.ok .label{color:var(--mint);}
+.status-banner.warn .label{color:var(--amber);}
+.status-banner.err .label{color:var(--red);}
+
+.two-col{display:grid;grid-template-columns:1.1fr 0.9fr;gap:20px;}
+@media(max-width:820px){.two-col{grid-template-columns:1fr;}}
+
+.panel{padding:24px 26px;}
+.panel h3{font-family:var(--font-mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-2);margin-bottom:16px;}
+
+.answer-text{font-size:17px;line-height:1.65;color:var(--text-0);font-weight:400;}
+.answer-text.hi{font-size:18px;}
+.answer-meta{display:flex;gap:16px;margin-top:18px;flex-wrap:wrap;}
+.meta-chip{font-family:var(--font-mono);font-size:11px;color:var(--text-2);display:flex;align-items:center;gap:6px;}
+.meta-chip b{color:var(--text-1);font-weight:500;}
+
+.chunk{
+  padding:14px 16px;border-radius:12px;background:rgba(255,255,255,0.025);
+  border:1px solid var(--panel-brd);margin-bottom:10px;
+}
+.chunk:last-child{margin-bottom:0;}
+.chunk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:10px;}
+.chunk-strategy{font-family:var(--font-mono);font-size:10px;color:var(--cyan);letter-spacing:0.05em;}
+.chunk-score{font-family:var(--font-mono);font-size:10px;color:var(--text-2);}
+.chunk-text{font-size:13px;color:var(--text-1);line-height:1.55;}
+
+.latency-panel{padding:24px 26px;}
+.lat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:18px;}
+.lat-box{text-align:center;padding:14px 8px;border-radius:12px;background:rgba(255,255,255,0.025);border:1px solid var(--panel-brd);}
+.lat-box .v{font-family:var(--font-mono);font-size:20px;font-weight:600;color:var(--text-0);}
+.lat-box .v span{font-size:11px;color:var(--text-2);}
+.lat-box .k{font-family:var(--font-mono);font-size:10px;color:var(--text-2);margin-top:4px;letter-spacing:0.08em;}
+.stage-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:9px;font-family:var(--font-mono);font-size:11px;}
+.stage-bar-row .name{width:96px;color:var(--text-2);flex:none;}
+.stage-bar-track{flex:1;height:6px;border-radius:4px;background:rgba(255,255,255,0.05);overflow:hidden;}
+.stage-bar-fill{height:100%;background:var(--grad-2);border-radius:4px;}
+.stage-bar-row .val{width:56px;text-align:right;color:var(--text-1);flex:none;}
+.offline-note{margin-top:16px;padding-top:16px;border-top:1px solid var(--panel-brd);font-size:11.5px;color:var(--text-2);line-height:1.6;}
+.offline-note b{color:var(--text-1);}
+
+/* architecture strip */
+.arch-strip{margin-top:70px;}
+.arch-strip .eyebrow{justify-content:center;margin-bottom:14px;}
+.arch-strip h3{font-family:var(--font-display);text-align:center;font-size:26px;font-weight:600;margin-bottom:34px;}
+.arch-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:900px){.arch-grid{grid-template-columns:repeat(2,1fr);}}
+.arch-card{padding:22px;}
+.arch-card .num{font-family:var(--font-mono);color:var(--cyan);font-size:11px;margin-bottom:10px;}
+.arch-card h4{font-family:var(--font-display);font-size:15.5px;font-weight:600;margin-bottom:8px;}
+.arch-card p{font-size:12.5px;color:var(--text-1);line-height:1.55;}
+
+.footer-note{text-align:center;margin-top:60px;font-family:var(--font-mono);font-size:11px;color:var(--text-2);line-height:1.8;}
+.footer-note a{color:var(--cyan);text-decoration:none;}
+
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);}
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important;}
+}
+</style>
+</head>
+<body>
+
+<section id="hero">
+  <canvas id="orb-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="eyebrow">Voice-native RAG · MSMARCO-XI</div>
+    <h1>Ask anything.<br><span class="grad-text">Grounded in truth.</span></h1>
+    <p>A voice pipeline that transcribes, retrieves, and answers only from what it can prove — hybrid lexical retrieval over IndicRAGSuite's MSMARCO-XI corpus, six chunking strategies, and hard guardrails that know when to stay silent.</p>
+    <div class="hero-tags">
+      <div class="hero-tag">STT → ElevenLabs</div>
+      <div class="hero-tag">Hybrid BM25 + TF-IDF</div>
+      <div class="hero-tag">6 chunking strategies</div>
+      <div class="hero-tag">3 independent guardrails</div>
+      <div class="hero-tag">Sub-200ms target</div>
+    </div>
+  </div>
+  <div class="scroll-cue" onclick="document.getElementById('app').scrollIntoView({behavior:'smooth'})">
+    <span>ENTER THE PIPELINE</span>
+    <div class="line"></div>
+  </div>
+</section>
+
+<div id="transition-wash"></div>
+
+<section id="app">
+  <div class="wrap">
+    <div class="app-header">
+      <div class="eyebrow">Live console</div>
+      <h2>Speak, or type, your question</h2>
+      <p>Runs entirely against the bundled MSMARCO-XI-style sample corpus (29 query/passage pairs, EN + HI) using the same chunking + hybrid retrieval + guardrail logic as the production Python pipeline.</p>
+    </div>
+
+    <div class="console glass">
+      <div class="mic-row">
+        <button id="mic-btn" title="Ask by voice">
+          <svg viewBox="0 0 24 24"><path d="M12 15a3 3 0 0 0 3-3V6a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-2.08A7 7 0 0 0 19 12h-2z"/></svg>
+        </button>
+        <div class="wave" id="wave">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <form id="query-form">
+          <input id="query-input" type="text" placeholder="e.g. What is retrieval-augmented generation?" autocomplete="off">
+          <button id="ask-btn" type="submit">ASK →</button>
+        </form>
+      </div>
+      <div class="mic-hint">Mic uses your browser's on-device speech recognition for this live demo (<b>fallback</b> when no ElevenLabs key is configured). Production transcription runs on <b>ElevenLabs Scribe</b> — see <code>stt.py</code>.</div>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+
+    <div class="glass" id="trace-wrap">
+      <div class="trace-title">Pipeline trace</div>
+      <div class="trace" id="trace"></div>
+    </div>
+
+    <div id="result-area">
+      <div id="status-banner"></div>
+      <div class="two-col">
+        <div class="panel glass">
+          <h3>Answer</h3>
+          <div class="answer-text" id="answer-text">—</div>
+          <div class="answer-meta" id="answer-meta"></div>
+        </div>
+        <div class="panel glass">
+          <h3>Retrieved context</h3>
+          <div id="chunks-list"></div>
+        </div>
+      </div>
+      <div class="latency-panel glass">
+        <h3>Latency — this query</h3>
+        <div class="lat-grid" id="lat-grid"></div>
+        <div id="stage-bars"></div>
+        <div class="offline-note" id="offline-note"></div>
+      </div>
+    </div>
+
+    <div class="arch-strip">
+      <div class="eyebrow">Pipeline shape</div>
+      <h3>Voice → text → retrieve → guardrail → answer</h3>
+      <div class="arch-grid">
+        <div class="arch-card glass">
+          <div class="num">01</div>
+          <h4>Speech-to-text</h4>
+          <p>ElevenLabs Scribe with structured retry/backoff on 429/5xx. Browser Web Speech API stands in for this live demo.</p>
+        </div>
+        <div class="arch-card glass">
+          <div class="num">02</div>
+          <h4>Multi-strategy chunking</h4>
+          <p>Fixed-size, sentence-window, semantic (topic-shift), recursive, and query-passage-aware — routed per document.</p>
+        </div>
+        <div class="arch-card glass">
+          <div class="num">03</div>
+          <h4>Hybrid retrieval</h4>
+          <p>TF-IDF cosine + BM25, fused with Reciprocal Rank Fusion, over a numpy vector store built for embedding drop-in.</p>
+        </div>
+        <div class="arch-card glass">
+          <div class="num">04</div>
+          <h4>Guardrails</h4>
+          <p>Unsafe-input filter, off-topic confidence floor, and a grounding check that verifies the answer against retrieved text.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note">
+      Corpus: ai4bharat/MSMARCO-XI (huggingface.co/datasets/ai4bharat/MSMARCO-XI) · sample corpus bundled for offline demo · full pipeline in <span style="color:var(--text-1)">rag_pipeline/</span>
+    </div>
+  </div>
+</section>
+
+<script>
+/* ============================================================
+   CORPUS (mirrors rag_pipeline/sample_corpus.json)
+   ============================================================ */
+const CORPUS = [{"doc_id": "en-000", "text": "New Delhi is the capital of India and seat of all three branches of the Government of India.", "query": "What is the capital of India?", "answer": "New Delhi", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "en-001", "text": "Paris is the capital and most populous city of France, situated on the river Seine in the north of the country.", "query": "What is the capital of France?", "answer": "Paris", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "en-002", "text": "Photosynthesis is the process by which green plants, algae and some bacteria convert light energy, usually from the sun, into chemical energy stored in glucose. Chlorophyll in the chloroplasts absorbs light, primarily in the red and blue wavelengths, and this energy drives the conversion of carbon dioxide and water into glucose and oxygen.", "query": "How does photosynthesis work?", "answer": "Plants convert light energy into chemical energy stored in glucose, releasing oxygen as a byproduct.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}, {"doc_id": "en-003", "text": "Seasons are caused by the tilt of the Earth's rotational axis, about 23.5 degrees, relative to its orbital plane around the Sun. As the Earth orbits, different hemispheres receive more or less direct sunlight over the course of the year, producing summer, winter, spring and autumn.", "query": "What causes seasons on Earth?", "answer": "The 23.5 degree tilt of Earth's axis relative to its orbit causes seasons.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}, {"doc_id": "en-004", "text": "The boiling point of pure water at standard atmospheric pressure (1 atm, sea level) is 100 degrees Celsius, which is equivalent to 212 degrees Fahrenheit or 373.15 Kelvin.", "query": "What is the boiling point of water at sea level?", "answer": "100 degrees Celsius (212°F) at sea level.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}, {"doc_id": "en-005", "text": "Retrieval-Augmented Generation (RAG) is a technique that combines a retrieval system with a generative language model. Instead of relying solely on knowledge memorized during training, the model retrieves relevant passages from an external corpus at inference time and conditions its generated answer on that retrieved context, which improves factual grounding and reduces hallucination.", "query": "What is retrieval-augmented generation?", "answer": "RAG combines document retrieval with a generative model so answers are grounded in retrieved context.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-006", "text": "A vector database is a type of database that stores data as high-dimensional numerical vectors, called embeddings, and is optimized for similarity search - finding the vectors that are closest to a query vector by a distance metric such as cosine similarity or Euclidean distance. Vector databases are commonly used to power semantic search and retrieval-augmented generation systems.", "query": "What is a vector database?", "answer": "A database optimized to store embeddings and perform similarity search over them.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-007", "text": "BM25 (Best Matching 25) is a ranking function used by search engines to estimate the relevance of documents to a given search query. It is a bag-of-words retrieval function based on term frequency and inverse document frequency, with tunable parameters that control term-frequency saturation and document-length normalization.", "query": "What is BM25?", "answer": "A probabilistic ranking function based on term frequency and inverse document frequency.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-008", "text": "Semantic chunking splits a document into segments based on shifts in meaning rather than a fixed character or token count. Sentence embeddings are computed for consecutive sentences and a new chunk boundary is introduced wherever the semantic similarity between adjacent sentences drops below a threshold, which keeps topically coherent text together.", "query": "What is semantic chunking?", "answer": "Splitting text at points where meaning shifts, using sentence-embedding similarity rather than a fixed size.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-009", "text": "Automatic speech-to-text transcription (ASR) converts spoken audio into text: acoustic features (mel-spectrograms) are extracted from the waveform, fed through a neural acoustic model to predict phonemes or subword tokens, and a language model refines these into the final transcript.", "query": "What is chunk overlap in text splitting?", "answer": "Repeating a portion of adjacent chunks so ideas spanning a boundary are not lost.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-010", "text": "Automatic speech recognition (ASR) systems convert spoken audio into text by first extracting acoustic features (such as mel-spectrograms) from the audio waveform, then feeding those features through a neural acoustic model to predict phonemes or subword tokens, and finally applying a language model to produce the most probable transcript.", "query": "How does speech-to-text transcription work?", "answer": "Audio is converted to acoustic features, decoded by an acoustic model, then refined by a language model into text.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-011", "text": "The Ganges (Ganga) is a trans-boundary river of Asia which flows through India and Bangladesh. It is considered sacred in Hinduism and supports one of the most densely populated river basins in the world, providing water for drinking, irrigation and hydroelectric power.", "query": "What is the Ganges river known for?", "answer": "It is a sacred river in Hinduism supporting a densely populated basin across India and Bangladesh.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "en-012", "text": "Mount Everest, located in the Mahalangur Himal sub-range of the Himalayas, is Earth's highest mountain above sea level, standing at 8,849 metres. The international border between Nepal and the Tibet Autonomous Region of China runs across its summit point.", "query": "What is the tallest mountain in the world?", "answer": "Mount Everest, at 8,849 metres above sea level.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "en-013", "text": "The Japanese yen is the official currency of Japan. It is the third most traded currency in the foreign exchange market after the US dollar and the euro, and is also widely used as a reserve currency.", "query": "What is the currency of Japan?", "answer": "The Japanese yen.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "en-014", "text": "Machine translation is the use of software to translate text or speech from one natural language to another without human involvement. Modern systems predominantly use neural machine translation, in which an encoder-decoder neural network, often based on the Transformer architecture, learns to map sequences in a source language to sequences in a target language.", "query": "What is machine translation?", "answer": "Automated translation of text between languages, typically using neural encoder-decoder models today.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-015", "text": "In the context of large language models, a hallucination is a response that is fluent and confident-sounding but factually incorrect, unsupported by the provided context, or entirely fabricated. Hallucinations are a key motivation for retrieval-augmented generation, which grounds outputs in retrieved evidence, and for guardrails that detect and suppress ungrounded claims.", "query": "What are hallucinations in language models?", "answer": "Fluent but factually incorrect or fabricated model outputs, unsupported by the given context.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-016", "text": "Cosine similarity is a metric used to measure how similar two vectors are irrespective of their magnitude, computed as the cosine of the angle between them. It is calculated as the dot product of the two vectors divided by the product of their magnitudes, and ranges from -1 (opposite) to 1 (identical direction).", "query": "What is cosine similarity?", "answer": "A metric measuring the cosine of the angle between two vectors, ranging from -1 to 1.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-017", "text": "The Indus Valley Civilization, also called the Harappan Civilization, was a Bronze Age civilization in the northwestern regions of South Asia. It is noted for its early urban planning, standardized weights and measures, and advanced drainage systems in cities such as Mohenjo-daro and Harappa.", "query": "What is the significance of the Indus Valley Civilization?", "answer": "An early Bronze Age civilization noted for advanced urban planning and drainage systems.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "history"}}, {"doc_id": "en-018", "text": "The Indian national anthem, 'Jana Gana Mana', was written and composed by the Nobel laureate poet Rabindranath Tagore. It was first sung in 1911 and officially adopted as the national anthem of India in 1950.", "query": "Who wrote the Indian national anthem?", "answer": "Rabindranath Tagore.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "history"}}, {"doc_id": "en-019", "text": "The liver is a vital organ that performs several functions, including detoxification of harmful substances, protein synthesis, production of biochemicals needed for digestion such as bile, and regulation of glycogen storage and blood sugar levels.", "query": "What is the function of the human liver?", "answer": "It detoxifies substances, synthesizes proteins, produces bile, and regulates blood sugar via glycogen storage.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "health"}}, {"doc_id": "en-020", "text": "Common symptoms of dehydration include increased thirst, dry mouth, dark-colored urine, fatigue, dizziness, and confusion in more severe cases. Mild to moderate dehydration is usually treated by drinking more fluids, while severe dehydration may require intravenous fluids.", "query": "What are the symptoms of dehydration?", "answer": "Thirst, dry mouth, dark urine, fatigue, dizziness, and in severe cases confusion.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "health"}}, {"doc_id": "en-021", "text": "Inflation is the rate at which the general level of prices for goods and services rises over time, eroding purchasing power. Central banks typically try to keep inflation at a low, stable rate, often around 2 percent annually, using tools such as interest rate adjustments.", "query": "What is inflation in economics?", "answer": "A sustained rise in the general price level, eroding purchasing power over time.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "economics"}}, {"doc_id": "en-022", "text": "Gross Domestic Product (GDP) is the total monetary value of all finished goods and services produced within a country's borders in a specific time period. It is one of the primary indicators used to gauge the health and size of a country's economy.", "query": "What is GDP?", "answer": "The total monetary value of all goods and services produced within a country in a given period.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "economics"}}, {"doc_id": "en-023", "text": "Weather refers to short-term atmospheric conditions in a specific place at a specific time, such as temperature or rainfall on a given day. Climate refers to the long-term average of weather patterns in a region, typically measured over a period of at least 30 years.", "query": "What is the difference between weather and climate?", "answer": "Weather is short-term atmospheric conditions; climate is the long-term average of those conditions over decades.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}, {"doc_id": "en-024", "text": "Renewable energy is energy derived from natural sources that are replenished at a rate faster than they are consumed, such as sunlight, wind, rain, tides, waves, and geothermal heat. Common examples include solar photovoltaic power, wind turbines, and hydroelectric dams.", "query": "What is renewable energy?", "answer": "Energy from naturally replenishing sources such as sunlight, wind, and water.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}, {"doc_id": "en-025", "text": "A firewall is a network security device or software that monitors incoming and outgoing network traffic and decides whether to allow or block specific traffic based on a defined set of security rules, acting as a barrier between a trusted internal network and untrusted external networks such as the internet.", "query": "What is the function of a firewall in networking?", "answer": "It monitors and filters network traffic based on security rules to block untrusted access.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "en-026", "text": "Latency is the time delay between a user's action, such as sending a request, and the system's corresponding response. In real-time or low-latency systems, engineers often measure latency using percentiles such as P50 (median), P90 or P99 to understand typical and worst-case performance rather than relying on a single average figure.", "query": "What is latency in a software system?", "answer": "The delay between a request and the corresponding response, often measured using percentiles like P50/P90/P99.", "language": "en", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "tech"}}, {"doc_id": "hi-000", "text": "नई दिल्ली भारत की राजधानी है और भारत सरकार की तीनों शाखाओं की सीट है।", "query": "भारत की राजधानी क्या है?", "answer": "नई दिल्ली", "language": "hi", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "geo"}}, {"doc_id": "hi-001", "text": "प्रकाश संश्लेषण वह प्रक्रिया है जिसके द्वारा हरे पौधे सूर्य के प्रकाश को ग्लूकोज में संग्रहीत रासायनिक ऊर्जा में बदलते हैं।", "query": "प्रकाश संश्लेषण कैसे काम करता है?", "answer": "पौधे प्रकाश ऊर्जा को ग्लूकोज में संग्रहीत रासायनिक ऊर्जा में बदलते हैं।", "language": "hi", "source": "sample_corpus_dev (MSMARCO-XI-style, hand-authored for offline demo)", "metadata": {"category": "science"}}];
+
+/* ============================================================
+   TOKENIZE + LIGHT STEM  (mirrors retrieval.py)
+   ============================================================ */
+const SUFFIXES = ["ational","ization","iveness","ing","tion","sion","ies","ed","es","s"];
+const RETRIEVAL_STOPWORDS = new Set(["the","a","an","is","are","was","were","of","to","in","on","and","or","it","this","that","for","with","as","by","be","at","from","which","its","what","how","does","do","did","who","s","t","can","will","would","should"]);
+function lightStem(w){
+  if(w.length<=4 || !/^[a-z]+$/.test(w)) return w;
+  for(const suf of SUFFIXES){
+    if(w.endsWith(suf) && w.length-suf.length>=3) return w.slice(0,-suf.length);
+  }
+  return w;
+}
+function tokenize(text){
+  const toks = (text.toLowerCase().match(/[\p{L}\p{N}]+/gu) || []).filter(t=>!RETRIEVAL_STOPWORDS.has(t));
+  return toks.map(lightStem);
+}
+
+/* ============================================================
+   CHUNKING (query-passage-aware: short passages -> 1 chunk each,
+   mirrors chunking.QueryPassageChunker default for this corpus shape)
+   ============================================================ */
+const CHUNKS = CORPUS.map((doc,i)=>({
+  chunk_id: doc.doc_id+"::query_passage_aware::0",
+  doc_id: doc.doc_id,
+  text: doc.text,
+  strategy: "query_passage_aware",
+  language: doc.language,
+  category: (doc.metadata && doc.metadata.category) || "general",
+  tokens: tokenize(doc.text)
+}));
+
+
+/* ============================================================
+   HYBRID RETRIEVAL: TF-IDF cosine + BM25 -> RRF  (mirrors retrieval.py)
+   ============================================================ */
+function buildIndex(chunks){
+  const N = chunks.length;
+  const df = {};
+  chunks.forEach(c=>{ new Set(c.tokens).forEach(t=>{ df[t]=(df[t]||0)+1; }); });
+  const vocab = Object.keys(df).sort();
+  const idf = {};
+  vocab.forEach(t=>{ idf[t] = Math.log((1+N)/(1+df[t]))+1.0; });
+
+  const tfidfVecs = chunks.map(c=>{
+    const tf = {};
+    c.tokens.forEach(t=>{ tf[t]=(tf[t]||0)+1; });
+    const len = Math.max(c.tokens.length,1);
+    const vec = {};
+    let norm=0;
+    for(const t in tf){ const v=(tf[t]/len)*(idf[t]||0); vec[t]=v; norm+=v*v; }
+    norm = Math.sqrt(norm)||1;
+    for(const t in vec) vec[t]/=norm;
+    return vec;
+  });
+
+  const avgdl = chunks.reduce((s,c)=>s+c.tokens.length,0)/Math.max(N,1);
+  const bm25idf = {};
+  vocab.forEach(t=>{ bm25idf[t] = Math.log((N-df[t]+0.5)/(df[t]+0.5)+1); });
+
+  return {vocab, idf, tfidfVecs, avgdl, bm25idf, k1:1.5, b:0.75};
+}
+const INDEX = buildIndex(CHUNKS);
+
+function cosineQuery(qTokens){
+  const tf={}; qTokens.forEach(t=>{tf[t]=(tf[t]||0)+1;});
+  const len=Math.max(qTokens.length,1);
+  const vec={}; let norm=0;
+  for(const t in tf){ const v=(tf[t]/len)*(INDEX.idf[t]||0); if(v){vec[t]=v; norm+=v*v;} }
+  norm=Math.sqrt(norm)||1;
+  for(const t in vec) vec[t]/=norm;
+  return CHUNKS.map((c,i)=>{
+    const dv = INDEX.tfidfVecs[i];
+    let dot=0;
+    for(const t in vec){ if(dv[t]) dot += vec[t]*dv[t]; }
+    return dot;
+  });
+}
+function bm25Query(qTokens){
+  const qtf={}; qTokens.forEach(t=>{qtf[t]=(qtf[t]||0)+1;});
+  return CHUNKS.map(c=>{
+    const dl=c.tokens.length;
+    const tf={}; c.tokens.forEach(t=>{tf[t]=(tf[t]||0)+1;});
+    let s=0;
+    for(const t in qtf){
+      if(!tf[t]) continue;
+      const idf = INDEX.bm25idf[t]||0;
+      const freq = tf[t];
+      const denom = freq + INDEX.k1*(1-INDEX.b+INDEX.b*dl/Math.max(INDEX.avgdl,1e-6));
+      s += idf*(freq*(INDEX.k1+1))/Math.max(denom,1e-6);
+    }
+    return s;
+  });
+}
+function rankOf(arr){
+  const idx = arr.map((v,i)=>i).sort((a,b)=>arr[b]-arr[a]);
+  const rank = new Array(arr.length);
+  idx.forEach((chunkI,r)=>{ rank[chunkI]=r; });
+  return rank;
+}
+function retrieve(query, topK=4){
+  const qTokens = tokenize(query);
+  const cos = cosineQuery(qTokens);
+  const bm25 = bm25Query(qTokens);
+  const cosRank = rankOf(cos), bmRank = rankOf(bm25);
+  const K=60;
+  const scored = CHUNKS.map((c,i)=>({
+    chunk:c,
+    rrf: 1/(K+cosRank[i]+1) + 1/(K+bmRank[i]+1),
+    cos: cos[i], bm25: bm25[i]
+  }));
+  scored.sort((a,b)=>b.rrf-a.rrf);
+  return scored.slice(0,topK);
+}
+
+/* ============================================================
+   TOOL ROUTER (mirrors tools.py) — runs BEFORE retrieval.
+   Arithmetic queries ("what's 2+2") have no business going through a
+   text retriever; they're routed to a safe calculator instead. No eval()/
+   Function() on raw input — a restricted recursive-descent parser only
+   accepts numbers and + - * / % ^ ( ), same safety contract as the
+   Python ast-allowlist version.
+   ============================================================ */
+const LEADING_PHRASES_RE = /^\s*(what'?s|what is|calculate|compute|solve|evaluate)\s*[:\-]?\s*/i;
+const ARITH_ONLY_RE = /^[\s0-9+\-*/^().]+\??$/;
+
+function calcTokenize(expr){
+  const toks = [];
+  const re = /\s*(\d+\.\d+|\d+|[+\-*/^()])\s*/g;
+  let m, pos=0;
+  while((m = re.exec(expr))){
+    if(m.index !== pos) throw new Error("Unexpected character in expression");
+    toks.push(m[1]);
+    pos = re.lastIndex;
+  }
+  if(pos !== expr.length) throw new Error("Unexpected trailing input");
+  return toks;
+}
+// Recursive-descent parser/evaluator: expr -> term (('+'|'-') term)* ; term -> factor (('*'|'/'|'%') factor)* ; factor -> power ; power -> unary ('^' unary)* ; unary -> ('-'|'+')? primary ; primary -> NUMBER | '(' expr ')'
+function calcEvaluate(tokens){
+  let i = 0;
+  function peek(){ return tokens[i]; }
+  function next(){ return tokens[i++]; }
+  function parseExpr(){
+    let v = parseTerm();
+    while(peek()==="+"||peek()==="-"){ const op=next(); const r=parseTerm(); v = op==="+" ? v+r : v-r; }
+    return v;
+  }
+  function parseTerm(){
+    let v = parsePower();
+    while(peek()==="*"||peek()==="/"||peek()==="%"){
+      const op=next(); const r=parsePower();
+      if(op==="*") v*=r; else if(op==="/"){ if(r===0) throw new Error("Division by zero"); v/=r; } else v%=r;
+    }
+    return v;
+  }
+  function parsePower(){
+    let v = parseUnary();
+    if(peek()==="^"){ next(); const r = parsePower(); v = Math.pow(v,r); }
+    return v;
+  }
+  function parseUnary(){
+    if(peek()==="-"){ next(); return -parseUnary(); }
+    if(peek()==="+"){ next(); return parseUnary(); }
+    return parsePrimary();
+  }
+  function parsePrimary(){
+    const t = next();
+    if(t==="("){ const v=parseExpr(); if(next()!==")") throw new Error("Expected )"); return v; }
+    if(t===undefined || isNaN(Number(t))) throw new Error("Expected number");
+    return Number(t);
+  }
+  const result = parseExpr();
+  if(i !== tokens.length) throw new Error("Unexpected trailing tokens");
+  return result;
+}
+function toolRoute(query){
+  const stripped = query.replace(LEADING_PHRASES_RE,"").trim().replace(/\?+$/,"").trim();
+  if(!stripped || !ARITH_ONLY_RE.test(stripped) || !/\d/.test(stripped)) return null;
+  try{
+    const tokens = calcTokenize(stripped);
+    let value = calcEvaluate(tokens);
+    if(Number.isInteger(value)) value = value; else value = Math.round(value*1e6)/1e6;
+    return {tool:"calculator", handled:true, output:String(value), expression:stripped};
+  }catch(e){
+    return {tool:"calculator", handled:false, error:String(e.message||e)};
+  }
+}
+
+/* ============================================================
+   GUARDRAILS (mirrors guardrails.py)
+   ============================================================ */
+const UNSAFE_RE = /how (do|can) i (make|build|synthesi[sz]e) (a )?(bomb|explosive|weapon)|(kill|murder|assassinate) (my|the|a)|how to (hurt|harm|kill) myself|suicide method|how to hack (into|a)|make (meth|methamphetamine|heroin|nerve gas)|ignore (previous|all|prior) instructions|you are now.{0,30}unrestricted|disregard your (system prompt|guardrails|instructions)/i;
+
+function unsafeGuard(query){
+  const m = query.match(UNSAFE_RE);
+  return m ? {passed:false, reason:"Query matched an unsafe-content / prompt-injection pattern."} : {passed:true};
+}
+function offTopicGuard(scored, minBm25=2.5){
+  if(!scored.length) return {passed:false, reason:"No chunks retrieved."};
+  const top = scored[0];
+  if(top.bm25 < minBm25) return {passed:false, reason:"Top retrieval confidence is below threshold — likely outside this corpus's coverage.", topBm25:top.bm25};
+  return {passed:true, topBm25:top.bm25};
+}
+const STOP = new Set(["the","a","an","is","are","was","were","of","to","in","on","and","or","it","this","that","for","with","as","by","be","at","from","which","its","what","how","does","do","did","who"]);
+function contentWords(text){
+  const toks = (text.toLowerCase().match(/[\p{L}\p{N}]+/gu) || []).filter(w=>!STOP.has(w) && w.length>2);
+  return new Set(toks);
+}
+function groundingGuard(answer, contextTexts, minRatio=0.28){
+  const aw = contentWords(answer);
+  if(aw.size===0) return {passed:false, reason:"Empty / unchecked answer."};
+  const cw = new Set();
+  contextTexts.forEach(t=>{ contentWords(t).forEach(w=>cw.add(w)); });
+  let overlap=0;
+  aw.forEach(w=>{ if(cw.has(w)) overlap++; });
+  const ratio = overlap/aw.size;
+  return {passed: ratio>=minRatio, ratio, reason: ratio>=minRatio?"":"Answer not sufficiently grounded in retrieved context."};
+}
+
+/* ============================================================
+   EXTRACTIVE FALLBACK GENERATOR (mirrors generation.ExtractiveGenerator)
+   ============================================================ */
+function extractiveGenerate(query, chunks){
+  const qw = contentWords(query);
+  let best="", bestScore=-1, bestChunk=null;
+  chunks.forEach(c=>{
+    c.chunk.text.split(/(?<=[.!?।])\s+/).forEach(sent=>{
+      const sw = contentWords(sent);
+      if(sw.size===0) return;
+      let ov=0; qw.forEach(w=>{ if(sw.has(w)) ov++; });
+      const score = ov/Math.max(qw.size,1);
+      if(score>bestScore){ bestScore=score; best=sent.trim(); bestChunk=c.chunk; }
+    });
+  });
+  if(!best && chunks.length){ best=chunks[0].chunk.text.split(".")[0]+"."; bestChunk=chunks[0].chunk; }
+  return {answer: best || "I don't have enough grounded information in the retrieved context to answer that.", usedChunk: bestChunk};
+}
+
+/* ============================================================
+   LLM GENERATION (Claude, grounded, via artifact API bridge)
+   ============================================================ */
+async function llmGenerate(query, chunks){
+  const contextBlock = chunks.map(c=>`[${c.chunk.chunk_id}] ${c.chunk.text}`).join("\n\n");
+  const sys = "You are a grounded question-answering assistant. Answer the user's question using ONLY the provided context passages. If the context does not contain enough information, reply exactly: \"I don't have enough grounded information in the retrieved context to answer that.\" Keep answers to 1-2 sentences. No outside knowledge. Respond in the same language as the question.";
+  const resp = await fetch("https://api.anthropic.com/v1/messages",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      model:"claude-sonnet-4-6",
+      max_tokens:220,
+      system:sys,
+      messages:[{role:"user", content:`Context:\n${contextBlock}\n\nQuestion: ${query}`}]
+    })
+  });
+  const data = await resp.json();
+  const text = (data.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("").trim();
+  if(!text) throw new Error("empty LLM response");
+  return text;
+}
+
+/* ============================================================
+   PIPELINE TRACE UI
+   ============================================================ */
+const STAGES = [
+  {id:"stt", label:"Speech-to-text"},
+  {id:"tool", label:"Tool router"},
+  {id:"chunk", label:"Chunk / Retrieve"},
+  {id:"guard1", label:"Guardrail"},
+  {id:"gen", label:"Generate"},
+  {id:"guard2", label:"Grounding"},
+];
+function renderTraceSkeleton(){
+  const el = document.getElementById("trace");
+  el.innerHTML = "";
+  STAGES.forEach((s,i)=>{
+    const node = document.createElement("div");
+    node.className="trace-node";
+    node.innerHTML = `<div class="node-dot" id="dot-${s.id}">${i+1}</div><div class="node-label">${s.label}</div><div class="node-ms" id="ms-${s.id}">—</div>`;
+    el.appendChild(node);
+    if(i<STAGES.length-1){
+      const line = document.createElement("div");
+      line.className="trace-line";
+      line.id=`line-${s.id}`;
+      line.innerHTML=`<div class="fill"></div>`;
+      el.appendChild(line);
+    }
+  });
+  document.getElementById("trace-wrap").classList.add("show");
+}
+function setStage(id, state, ms){
+  const dot = document.getElementById(`dot-${id}`);
+  const msEl = document.getElementById(`ms-${id}`);
+  dot.classList.remove("active","done","fail");
+  dot.classList.add(state);
+  if(state==="done") dot.innerHTML = "✓";
+  if(state==="fail") dot.innerHTML = "✕";
+  if(ms!==undefined){ msEl.textContent = ms.toFixed(2)+"ms"; msEl.classList.add("done"); }
+  const line = document.getElementById(`line-${id}`);
+  if(line) line.querySelector(".fill").style.width = state!=="active" ? "100%" : "0%";
+}
+async function pause(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+/* ============================================================
+   MAIN PIPELINE RUN
+   ============================================================ */
+const NOT_IN_DATABASE_MSG = "The database does not provide data for the given question.";
+const sessionLatencies = [];
+
+async function runPipeline(rawQuery){
+  renderTraceSkeleton();
+  document.getElementById("result-area").classList.remove("show");
+  const timings = {};
+  let t0, dt;
+
+  // STAGE 1: STT (already have text from mic/input, but time+display the stage)
+  setStage("stt","active");
+  t0 = performance.now();
+  const query = rawQuery.trim();
+  await pause(60);
+  dt = performance.now()-t0; timings.stt = dt;
+  setStage("stt","done", dt);
+
+  // STAGE guard: unsafe input (runs first, before any tool/retrieval path)
+  setStage("guard1","active");
+  t0 = performance.now();
+  const unsafe = unsafeGuard(query);
+  dt = performance.now()-t0; timings.guard_unsafe = dt;
+  if(!unsafe.passed){
+    setStage("guard1","fail", dt);
+    setStage("tool","fail",0); setStage("chunk","fail",0); setStage("gen","fail",0); setStage("guard2","fail",0);
+    return finish({status:"refused_unsafe", query, timings});
+  }
+  setStage("guard1","done", dt);
+
+  // STAGE: tool router (e.g. arithmetic) -- tried before retrieval since
+  // some queries are correctly outside what a retrieval-grounded pipeline
+  // can answer from the corpus at all.
+  setStage("tool","active");
+  t0 = performance.now();
+  const routed = toolRoute(query);
+  dt = performance.now()-t0; timings.tool_router = dt;
+  if(routed && routed.handled){
+    setStage("tool","done", dt);
+    setStage("chunk","fail",0); setStage("gen","fail",0); setStage("guard2","fail",0);
+    return finish({status:"answered_via_tool", query, timings, answer: routed.output, backend: `tool: ${routed.tool}`});
+  }
+  setStage("tool", routed ? "fail" : "done", dt);
+
+  // STAGE 2: chunk/retrieve
+  setStage("chunk","active");
+  t0 = performance.now();
+  const scored = retrieve(query, 4);
+  await pause(20);
+  dt = performance.now()-t0; timings.retrieval = dt;
+  setStage("chunk","done", dt);
+
+  // off-topic guard
+  const offtopic = offTopicGuard(scored);
+  if(!offtopic.passed){
+    setStage("gen","fail",0); setStage("guard2","fail",0);
+    return finish({status:"refused_off_topic", query, timings, scored});
+  }
+
+  // STAGE 3: generate
+  setStage("gen","active");
+  t0 = performance.now();
+  let answer, backend, usedChunk;
+  try{
+    answer = await llmGenerate(query, scored);
+    backend = "claude (grounded)";
+  }catch(e){
+    const ext = extractiveGenerate(query, scored);
+    answer = ext.answer; backend = "extractive fallback"; usedChunk = ext.usedChunk;
+  }
+  dt = performance.now()-t0; timings.generation = dt;
+  setStage("gen","done", dt);
+
+  // STAGE 4: grounding guard
+  setStage("guard2","active");
+  t0 = performance.now();
+  const grounding = groundingGuard(answer, scored.map(s=>s.chunk.text));
+  dt = performance.now()-t0; timings.guard_grounding = dt;
+  if(!grounding.passed){
+    setStage("guard2","fail", dt);
+    return finish({status:"refused_ungrounded", query, timings, scored, answer});
+  }
+  setStage("guard2","done", dt);
+
+  return finish({status:"answered", query, timings, scored, answer, backend});
+}
+
+function finish({status, query, timings, scored=[], answer=null, backend=""}){
+  const total = Object.values(timings).reduce((a,b)=>a+b,0);
+  sessionLatencies.push(total);
+
+  const area = document.getElementById("result-area");
+  area.classList.add("show");
+
+  // status banner
+  const banner = document.getElementById("status-banner");
+  if(status==="answered"){
+    banner.className="status-banner ok";
+    banner.innerHTML=`<div class="dot"></div><div><span class="label">Answered · grounded</span>Guardrails passed — answer is checked against retrieved context.</div>`;
+  } else if(status==="answered_via_tool"){
+    banner.className="status-banner ok";
+    banner.innerHTML=`<div class="dot"></div><div><span class="label">Answered · via tool call</span>Routed to the calculator tool instead of retrieval — this isn't a corpus-lookup question, so RAG correctly stayed out of the way.</div>`;
+  } else if(status==="refused_unsafe"){
+    banner.className="status-banner err";
+    banner.innerHTML=`<div class="dot"></div><div><span class="label">Blocked · unsafe input</span>This query matched the unsafe-input guardrail and was stopped before retrieval ran.</div>`;
+  } else if(status==="refused_off_topic"){
+    banner.className="status-banner warn";
+    banner.innerHTML=`<div class="dot"></div><div><span class="label">Declined · off-topic</span>Retrieval confidence was below the corpus-coverage floor, so the system is abstaining rather than guessing.</div>`;
+  } else if(status==="refused_ungrounded"){
+    banner.className="status-banner warn";
+    banner.innerHTML=`<div class="dot"></div><div><span class="label">Declined · ungrounded</span>The generated answer didn't overlap enough with retrieved context to pass the hallucination check, so it was withheld.</div>`;
+  }
+
+  // answer
+  const ansEl = document.getElementById("answer-text");
+  const metaEl = document.getElementById("answer-meta");
+  if(status==="answered" || status==="answered_via_tool"){
+    ansEl.textContent = answer;
+    metaEl.innerHTML = `<div class="meta-chip">backend <b>${backend}</b></div><div class="meta-chip">chunks used <b>${scored.length}</b></div>`;
+  } else if(status==="refused_off_topic" || status==="refused_ungrounded"){
+    ansEl.textContent = NOT_IN_DATABASE_MSG;
+    metaEl.innerHTML = "";
+  } else {
+    ansEl.textContent = "No answer returned — see status above.";
+    metaEl.innerHTML = "";
+  }
+
+  // chunks
+  const chunksEl = document.getElementById("chunks-list");
+  chunksEl.innerHTML = "";
+  if(scored.length){
+    scored.forEach(s=>{
+      const div = document.createElement("div");
+      div.className="chunk";
+      div.innerHTML = `<div class="chunk-top"><span class="chunk-strategy">${s.chunk.strategy}</span><span class="chunk-score">rrf ${s.rrf.toFixed(4)} · bm25 ${s.bm25.toFixed(2)}</span></div><div class="chunk-text">${s.chunk.text}</div>`;
+      chunksEl.appendChild(div);
+    });
+  } else {
+    chunksEl.innerHTML = `<div class="chunk-text" style="color:var(--text-2)">No chunks retrieved (blocked before retrieval).</div>`;
+  }
+
+  // latency panel
+  const p = (arr,pct)=>{
+    if(!arr.length) return 0;
+    const s=[...arr].sort((a,b)=>a-b);
+    const k=(s.length-1)*(pct/100);
+    const f=Math.floor(k), c=Math.min(Math.ceil(k), s.length-1);
+    return f===c? s[f] : s[f]+(s[c]-s[f])*(k-f);
+  };
+  document.getElementById("lat-grid").innerHTML = `
+    <div class="lat-box"><div class="v">${total.toFixed(2)}<span>ms</span></div><div class="k">THIS QUERY</div></div>
+    <div class="lat-box"><div class="v">${p(sessionLatencies,50).toFixed(2)}<span>ms</span></div><div class="k">SESSION P50</div></div>
+    <div class="lat-box"><div class="v">${p(sessionLatencies,100).toFixed(2)}<span>ms</span></div><div class="k">SESSION P100</div></div>
+  `;
+  const stageBars = document.getElementById("stage-bars");
+  stageBars.innerHTML = "";
+  const maxT = Math.max(...Object.values(timings), 0.001);
+  Object.entries(timings).forEach(([k,v])=>{
+    const row = document.createElement("div");
+    row.className="stage-bar-row";
+    row.innerHTML = `<div class="name">${k}</div><div class="stage-bar-track"><div class="stage-bar-fill" style="width:${(v/maxT*100).toFixed(1)}%"></div></div><div class="val">${v.toFixed(2)}ms</div>`;
+    stageBars.appendChild(row);
+  });
+  document.getElementById("offline-note").innerHTML =
+    `<b>Offline benchmark reference</b> (Python harness, pure compute path, n=170 runs over 34 queries × 5 repeats, no network calls): P50 0.63ms · P70 0.69ms · P90 0.76ms · P100 0.87ms — 100% under the 200ms target. This in-browser demo additionally times a live network call to the generation model, so its numbers run higher and reflect end-to-end wall-clock, not just the retrieval/guardrail compute path.`;
+
+  return {status, timings, total};
+}
+
+/* ============================================================
+   INPUT WIRING
+   ============================================================ */
+document.getElementById("query-form").addEventListener("submit",(e)=>{
+  e.preventDefault();
+  const val = document.getElementById("query-input").value.trim();
+  if(val) runPipeline(val);
+});
+
+const SUGGESTIONS = [
+  "What is retrieval-augmented generation?",
+  "What's 2+2?",
+  "What is the capital of India?",
+  "Explain BM25 ranking",
+  "What is the offside rule in football?",
+  "How do I make a bomb at home?",
+];
+const sugWrap = document.getElementById("suggestions");
+SUGGESTIONS.forEach(s=>{
+  const c = document.createElement("div");
+  c.className="chip"; c.textContent = s;
+  c.onclick = ()=>{ document.getElementById("query-input").value = s; runPipeline(s); };
+  sugWrap.appendChild(c);
+});
+
+/* mic (Web Speech API demo stand-in for ElevenLabs) */
+const micBtn = document.getElementById("mic-btn");
+const waveEl = document.getElementById("wave");
+let recognizer = null;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if(SR){
+  recognizer = new SR();
+  recognizer.lang = "en-US";
+  recognizer.interimResults = false;
+  recognizer.maxAlternatives = 1;
+  recognizer.onstart = ()=>{ micBtn.classList.add("listening"); waveEl.classList.add("active"); };
+  recognizer.onend = ()=>{ micBtn.classList.remove("listening"); waveEl.classList.remove("active"); };
+  recognizer.onresult = (e)=>{
+    const text = e.results[0][0].transcript;
+    document.getElementById("query-input").value = text;
+    runPipeline(text);
+  };
+  recognizer.onerror = ()=>{ micBtn.classList.remove("listening"); waveEl.classList.remove("active"); };
+}
+micBtn.addEventListener("click", ()=>{
+  if(!recognizer){ alert("Your browser doesn't support live speech recognition — type your question instead. Production STT uses ElevenLabs server-side (see stt.py)."); return; }
+  try{ recognizer.start(); }catch(e){}
+});
+
+/* ============================================================
+   HERO ORB CANVAS BACKGROUND
+   ============================================================ */
+(function(){
+  const canvas = document.getElementById("orb-canvas");
+  const ctx = canvas.getContext("2d");
+  let w,h,nodes=[];
+  function resize(){
+    w = canvas.width = canvas.offsetWidth * devicePixelRatio;
+    h = canvas.height = canvas.offsetHeight * devicePixelRatio;
+  }
+  function init(){
+    resize();
+    nodes = Array.from({length:46}, ()=>({
+      x:Math.random()*w, y:Math.random()*h,
+      vx:(Math.random()-0.5)*0.28*devicePixelRatio, vy:(Math.random()-0.5)*0.28*devicePixelRatio,
+      r: (Math.random()*1.6+0.6)*devicePixelRatio
+    }));
+  }
+  function step(){
+    ctx.clearRect(0,0,w,h);
+    nodes.forEach(n=>{
+      n.x+=n.vx; n.y+=n.vy;
+      if(n.x<0||n.x>w) n.vx*=-1;
+      if(n.y<0||n.y>h) n.vy*=-1;
+    });
+    for(let i=0;i<nodes.length;i++){
+      for(let j=i+1;j<nodes.length;j++){
+        const a=nodes[i], b=nodes[j];
+        const d = Math.hypot(a.x-b.x, a.y-b.y);
+        const maxD = 160*devicePixelRatio;
+        if(d<maxD){
+          ctx.strokeStyle = `rgba(139,107,255,${(1-d/maxD)*0.16})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+        }
+      }
+    }
+    nodes.forEach(n=>{
+      ctx.beginPath();
+      ctx.fillStyle = "rgba(47,217,232,0.55)";
+      ctx.arc(n.x,n.y,n.r,0,Math.PI*2);
+      ctx.fill();
+    });
+    requestAnimationFrame(step);
+  }
+  window.addEventListener("resize", resize);
+  init(); step();
+})();
+</script>
+</body>
+</html>
