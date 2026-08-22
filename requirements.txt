@@ -2,3 +2,4 @@ numpy>=1.24
 requests>=2.31
 # Optional, only needed for the real ai4bharat/MSMARCO-XI network load path:
 # datasets>=2.19
+# P50 and P100
